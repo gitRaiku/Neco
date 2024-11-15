@@ -1,0 +1,5 @@
+*.o
+.obj/
+protocol/*.c
+protocol/*.h
+
