@@ -67,7 +67,7 @@ int32_t cshmf(uint32_t size) {
 
   int32_t fd = 0;
   uint32_t retries = 100;
-  do { gname(fnm); fd = shm_open(fnm, O_RDWR | O_CREAT | O_EXCL, 0600); if (fd >= 0) { break; } } while (--retries); if (retries == 0) { LOG(0, "Could not create the shm file! [%m]\n"); exit(1); }
+  do { gname(fnm); fd = shm_open(fnm, O_RDWR | O_CREAT | O_EXCL, 0600); if (fd >= 0) { break; } } while (--retries); if (retries == 0) { LOG(10, "Could not create the shm file! [%m]\n"); exit(1); }
   WLCHECKE(!shm_unlink(fnm),"Could not unlink the shm file!");
   WLCHECKE(!ftruncate(fd, size),"Could not truncate the shm file!");
   return fd;
@@ -158,10 +158,7 @@ const struct zxdg_output_v1_listener zxout_listener = { .name = zxout_name, .log
 void p_frame(void *data, struct wl_pointer *ptr) { /// TODO
   struct cseat *seat = data;
   if (!seat->p.fmon) { return; }
-  if (seat->p.lpres == 1) {
-    fprintf(stdout, "PRESDED\n");
-    /// Handle clicks
-  }
+  if (seat->p.lpres == 1) { }
 }
 void p_button(void *data, struct wl_pointer *ptr, uint32_t serial, uint32_t time, uint32_t button, uint32_t pressed) {
   struct cseat *seat = data;
@@ -289,22 +286,34 @@ void getframe(void* data, struct GIF_WHDR* whdr) {
   }
 }
 
-void loadgif(char *__restrict fname, struct gif *__restrict g) {
-#if !EMBED_GIF
+uint32_t read_file(char *__restrict fname, uint8_t *__restrict *__restrict mem) {
   uint32_t op = open(fname, O_RDONLY);
-  if (op == -1) { fprintf(stderr, "Could not open %s! [%m]\n", fname); exit(1); }
+  if (op == -1) { LOG(10, "Could not open %s! [%m]\n", fname); exit(1); }
   uint32_t size = (unsigned long)lseek(op, 0UL, 2 /** SEEK_END **/);
   lseek(op, 0UL, 0 /** SEEK_SET **/);
 
-  uint8_t *__restrict mem = malloc(size);
-  if (read(op, mem, size));
+  *mem = malloc(size);
+  if (read(op, *mem, size));
   close(op);
+  return size;
+}
+
+void defaultgif(struct gif *__restrict g) {
+#if !EMBED_GIF
+  uint8_t *__restrict mem;
+  uint32_t size = read_file(GIF_PATH, &mem);
 #else
   uint8_t mem[] = { 
 #embed GIF_PATH
   };
   uint32_t size = sizeof(mem) / sizeof(mem[0]);
 #endif
+  GIF_Load(mem, size, getframe, 0, g, 0L);
+}
+
+void customgif(char *__restrict fname, struct gif *__restrict g) {
+  uint8_t *__restrict mem;
+  uint32_t size = read_file(fname, &mem);
   GIF_Load(mem, size, getframe, 0, g, 0L);
 }
 
@@ -316,16 +325,29 @@ void init_random() {
   srand(seed);
 }
 
-int main(void) {
+int main(int argc, char **argv) {
   setbuf(stderr, NULL);
   setlocale(LC_ALL, "");
-  log_level = 0;
+  log_level = 2;
   errf = stderr;
+  if (argc > 2) {
+    LOG(10, "Invalid arguments!");
+    LOG(10, "Usage: neco <path/to/gif>");
+    return 1;
+  } else if (argc == 2) {
+    LOG(0, "Using custom gif path %s\n", argv[1]);
+    customgif(argv[1], &gif);
+  } else{
+    LOG(0, "Using default gif path %s\n", GIF_PATH);
+    defaultgif(&gif);
+  }
+  if (!gif.data) {
+    LOG(10, "Could not load gif at path %s!\n", argc == 2 ? argv[1] : GIF_PATH);
+    exit(1);
+  }
   init_random();
 
   fprintf(stdout, "\033[37;1;1mBurunyuu\033[0m\n");
-  
-  loadgif(GIF_PATH, &gif);
   stu = getcurtu();
   ctu = 0;
   ntu = ctu + gif.times[0] - (float)((float)rand() / (float)RAND_MAX) * 30;
@@ -342,7 +364,6 @@ int main(void) {
   float rr = sqrt(xr * xr + yr * yr);
   xr /= rr;
   yr /= rr;
-  //fprintf(stdout, "float startxspeed = %f;\nfloat startyspeed = %f;\nfloat startx = %f;\nfloat starty = %f;\n", xr, yr, cposx, cposy);
   init_wayland();
 
   while (1) {
@@ -354,7 +375,6 @@ int main(void) {
     cposy += (ctu - ltu) * yr * speedMultiplier;
     cposy = amod(cposy, dh * 2);
     for(i = 0; i < state.monsl; ++i) { 
-      //fprintf(stdout, "%f %f %u %u\n", cposx, cposy, fw(cposx, dh), fw(cposy, dw));
       zwlr_layer_surface_v1_set_margin(CMON.lsurf, fw(cposy, dh), 0, 0, fw(cposx, dw));
     } 
     wl_display_dispatch(state.dpy);

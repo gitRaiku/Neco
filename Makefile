@@ -66,7 +66,7 @@ valgrind: build
 	$(VALGRIND) $(BIN_DIR)/$(TARGET)
 
 debug: build
-	gdb -q $(BIN_DIR)/$(TARGET)
+	(cd $(BIN_DIR) && gdb -q ./$(TARGET))
 
 clean:
 	sudo rm -f  $(C_OBJ)
