@@ -60,7 +60,7 @@ install: build
 	cp $(BIN_DIR)/$(TARGET) /usr/local/bin/$(TARGET)
 
 run: build
-	./$(BIN_DIR)/$(TARGET)
+	(cd $(BIN_DIR) && ./$(TARGET))
 
 valgrind: build
 	$(VALGRIND) $(BIN_DIR)/$(TARGET)
