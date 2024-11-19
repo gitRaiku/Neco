@@ -73,4 +73,5 @@ clean:
 	sudo rm -f  $(PROT_NAMES:%=$(PRT_DIR)/%-protocol.h)
 	sudo rm -f  $(PROT_NAMES:%=$(PRT_DIR)/%-protocol.c)
 	sudo rm -rf $(OBJ_DIR)/$(PRT_DIR)
+	sudo rm -f $(BIN_DIR)/$(TARGET)
 
