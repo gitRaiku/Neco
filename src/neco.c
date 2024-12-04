@@ -7,6 +7,7 @@ VECTOR_SUITE(seat, struct cseat)
 uint32_t log_level;
 FILE *__restrict errf;
 float cposx, cposy;
+double scale = 1.0;
 uint32_t dw, dh;
 int32_t amod(int32_t x, int32_t m) { return ((x % m) + m) % m; }
 uint32_t fw(int32_t x, int32_t l) {
@@ -16,7 +17,6 @@ uint32_t fw(int32_t x, int32_t l) {
     return amod(x, l);
   }
 }
-
 
 struct cstate {
   struct wl_display *dpy;
@@ -252,10 +252,10 @@ void render_mons() { int32_t i; for(i = 0; i < state.monsl; ++i) { render(&CMON)
 void getframe(void* data, struct GIF_WHDR* whdr) {
   struct gif *__restrict g = data;
   if (!whdr->ifrm) { 
-    g->w = whdr->xdim;
-    g->h = whdr->ydim;
+    g->w = whdr->xdim * scale;
+    g->h = whdr->ydim * scale;
     g->framec = whdr->nfrm;
-    g->data = malloc(g->w * g->h * g->framec);
+    g->data = malloc(ceil(g->w * g->h * g->framec));
     g->times = malloc(g->framec * sizeof(*g->times));
     g->ncol = whdr->clrs;
     g->cols = malloc(g->ncol * sizeof(*g->cols));
@@ -271,15 +271,16 @@ void getframe(void* data, struct GIF_WHDR* whdr) {
 
   g->times[whdr->ifrm] = whdr->time;
 
-  {
+  /// TODO: Add gif sub scaling
+  { 
     int32_t i, j;
     for (i = 0; i < g->h; ++i) {
       for (j = 0; j < g->w; ++j) {
-        if ((i < whdr->fryo) || (i >= whdr->fryo + whdr->fryd) ||
-            (j < whdr->frxo) || (j >= whdr->frxo + whdr->frxd)) {
+        if ((i < whdr->fryo * scale) || (i >= (whdr->fryo + whdr->fryd) * scale) ||
+            (j < whdr->frxo * scale) || (j >= (whdr->frxo + whdr->frxd) * scale)) {
           GIFC(*g, whdr->ifrm, i, j) = whdr->tran;
         } else {
-          GIFC(*g, whdr->ifrm, i, j) = whdr->bptr[(i - whdr->fryo) * whdr->frxd + j - whdr->frxo];
+          GIFC(*g, whdr->ifrm, i, j) = whdr->bptr[((int)(i/scale) - whdr->fryo) * whdr->frxd + (int)(j/scale) - whdr->frxo];
         }
       }
     }
@@ -325,21 +326,37 @@ void init_random() {
   srand(seed);
 }
 
+void usage() {
+  fprintf(stderr, "Invalid arguments!\n");
+  fprintf(stderr, "Usage: neco [-s/--scale <1.0>] [path/to/gif]\n");
+  exit(1);
+}
+
 int main(int argc, char **argv) {
   setbuf(stderr, NULL);
   setlocale(LC_ALL, "");
-  log_level = 2;
+  log_level = 0;
   errf = stderr;
-  if (argc > 2) {
-    LOG(10, "Invalid arguments!");
-    LOG(10, "Usage: neco [path/to/gif]");
-    return 1;
-  } else if (argc == 2) {
-    LOG(0, "Using custom gif path %s\n", argv[1]);
-    customgif(argv[1], &gif);
-  } else{
-    LOG(0, "Using default gif path %s\n", GIF_PATH);
-    defaultgif(&gif);
+  {
+    int32_t i;
+    for(i = 1; i < argc; ++i) {
+      if (argv[i][0] == '-') {
+        if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--scale")) {
+          if (i == argc - 1) { usage(); }
+          char *t;
+          scale = strtod(argv[i + 1], &t); ++i;
+          if (t == argv[i]) { LOG(10, "Error converting argument [%s] into double!\n", argv[i]); usage(); }
+          if (scale < 0.999) { LOG(10, "Currently only scales greater than one are supported\n"); usage(); }
+        }
+      } else { break; }
+    }
+    if (i < argc) {
+      LOG(0, "Using custom gif path %s\n", argv[i]);
+      customgif(argv[i], &gif);
+    } else {
+      LOG(0, "Using default gif path %s\n", GIF_PATH);
+      defaultgif(&gif);
+    }
   }
   if (!gif.data) {
     LOG(10, "Could not load gif at path %s!\n", argc == 2 ? argv[1] : GIF_PATH);
