@@ -57,6 +57,8 @@ build: $(BIN_DIR) $(PROT_OBJ_NAMES) $(BIN_DIR)/$(TARGET)
 
 install: build
 	@killall $(TARGET) || true
+	mkdir -p /usr/share/wl-neco
+	cp neco.gif /usr/share/wl-neco/neco.gif
 	cp $(BIN_DIR)/$(TARGET) /usr/local/bin/$(TARGET)
 
 run: build

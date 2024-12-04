@@ -1,9 +1,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define EMBED_GIF 0 // 0 = always read the gif from the specified path
+#define EMBED_GIF 1 // 0 = always read the gif from the specified path
                     // 1 = #embed the gif into the executable (C23)
-#define GIF_PATH "../neco.gif"
+#define GIF_PATH "/usr/share/wl-neco/neco.gif"
 
 uint32_t screenw = 1920; // Screen width and height in px
 uint32_t screenh = 1080;

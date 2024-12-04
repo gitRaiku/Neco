@@ -332,7 +332,7 @@ int main(int argc, char **argv) {
   errf = stderr;
   if (argc > 2) {
     LOG(10, "Invalid arguments!");
-    LOG(10, "Usage: neco <path/to/gif>");
+    LOG(10, "Usage: neco [path/to/gif]");
     return 1;
   } else if (argc == 2) {
     LOG(0, "Using custom gif path %s\n", argv[1]);
