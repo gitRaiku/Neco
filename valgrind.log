@@ -1,0 +1,106 @@
+==22115== Memcheck, a memory error detector
+==22115== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
+==22115== Using Valgrind-3.24.0 and LibVEX; rerun with -h for copyright info
+==22115== Command: bin/neco -s 3 /home/raiku/neco-arc-mbtl.gif
+==22115== Parent PID: 22113
+==22115== 
+==22115== realloc() with size 0
+==22115==    at 0x484BE40: realloc (vg_replace_malloc.c:1801)
+==22115==    by 0x402E4C: GIF_Load (gif_load.h:291)
+==22115==    by 0x40641E: customgif (neco.c:346)
+==22115==    by 0x406638: main (neco.c:383)
+==22115==  Address 0x4bb3e80 is 0 bytes inside a block of size 36,886 alloc'd
+==22115==    at 0x48447A8: malloc (vg_replace_malloc.c:446)
+==22115==    by 0x402AA1: GIF_Load (gif_load.h:250)
+==22115==    by 0x40641E: customgif (neco.c:346)
+==22115==    by 0x406638: main (neco.c:383)
+==22115== 
+==22115== Invalid read of size 8
+==22115==    at 0x403D82: seat_caps (neco.c:177)
+==22115==    by 0x4BA7595: ffi_call_unix64 (unix64.S:104)
+==22115==    by 0x4BA400D: ffi_call_int.lto_priv.0 (ffi64.c:673)
+==22115==    by 0x4BA6BD2: ffi_call (ffi64.c:710)
+==22115==    by 0x48A98AF: wl_closure_invoke.constprop.0 (connection.c:1228)
+==22115==    by 0x48AA138: dispatch_event (wayland-client.c:1674)
+==22115==    by 0x48AA552: UnknownInlinedFun (wayland-client.c:1820)
+==22115==    by 0x48AA552: wl_display_dispatch_queue_pending (wayland-client.c:2062)
+==22115==    by 0x48AD4CB: wl_display_roundtrip_queue (wayland-client.c:1448)
+==22115==    by 0x405C64: init_wayland (neco.c:234)
+==22115==    by 0x40679A: main (neco.c:412)
+==22115==  Address 0x4d053d0 is 16 bytes inside a block of size 192 free'd
+==22115==    at 0x484BE40: realloc (vg_replace_malloc.c:1801)
+==22115==    by 0x405417: seatvt (neco.c:5)
+==22115==    by 0x405AEB: init_wayland (neco.c:228)
+==22115==    by 0x40679A: main (neco.c:412)
+==22115==  Block was alloc'd at
+==22115==    at 0x484BC13: calloc (vg_replace_malloc.c:1675)
+==22115==    by 0x4053F0: seatvi (neco.c:5)
+==22115==    by 0x405A87: init_wayland (neco.c:217)
+==22115==    by 0x40679A: main (neco.c:412)
+==22115== 
+==22115== Invalid read of size 8
+==22115==    at 0x403D92: seat_caps (neco.c:178)
+==22115==    by 0x4BA7595: ffi_call_unix64 (unix64.S:104)
+==22115==    by 0x4BA400D: ffi_call_int.lto_priv.0 (ffi64.c:673)
+==22115==    by 0x4BA6BD2: ffi_call (ffi64.c:710)
+==22115==    by 0x48A98AF: wl_closure_invoke.constprop.0 (connection.c:1228)
+==22115==    by 0x48AA138: dispatch_event (wayland-client.c:1674)
+==22115==    by 0x48AA552: UnknownInlinedFun (wayland-client.c:1820)
+==22115==    by 0x48AA552: wl_display_dispatch_queue_pending (wayland-client.c:2062)
+==22115==    by 0x48AD4CB: wl_display_roundtrip_queue (wayland-client.c:1448)
+==22115==    by 0x405C64: init_wayland (neco.c:234)
+==22115==    by 0x40679A: main (neco.c:412)
+==22115==  Address 0x4d053c8 is 8 bytes inside a block of size 192 free'd
+==22115==    at 0x484BE40: realloc (vg_replace_malloc.c:1801)
+==22115==    by 0x405417: seatvt (neco.c:5)
+==22115==    by 0x405AEB: init_wayland (neco.c:228)
+==22115==    by 0x40679A: main (neco.c:412)
+==22115==  Block was alloc'd at
+==22115==    at 0x484BC13: calloc (vg_replace_malloc.c:1675)
+==22115==    by 0x4053F0: seatvi (neco.c:5)
+==22115==    by 0x405A87: init_wayland (neco.c:217)
+==22115==    by 0x40679A: main (neco.c:412)
+==22115== 
+==22115== Invalid write of size 8
+==22115==    at 0x403D9E: seat_caps (neco.c:178)
+==22115==    by 0x4BA7595: ffi_call_unix64 (unix64.S:104)
+==22115==    by 0x4BA400D: ffi_call_int.lto_priv.0 (ffi64.c:673)
+==22115==    by 0x4BA6BD2: ffi_call (ffi64.c:710)
+==22115==    by 0x48A98AF: wl_closure_invoke.constprop.0 (connection.c:1228)
+==22115==    by 0x48AA138: dispatch_event (wayland-client.c:1674)
+==22115==    by 0x48AA552: UnknownInlinedFun (wayland-client.c:1820)
+==22115==    by 0x48AA552: wl_display_dispatch_queue_pending (wayland-client.c:2062)
+==22115==    by 0x48AD4CB: wl_display_roundtrip_queue (wayland-client.c:1448)
+==22115==    by 0x405C64: init_wayland (neco.c:234)
+==22115==    by 0x40679A: main (neco.c:412)
+==22115==  Address 0x4d053d0 is 16 bytes inside a block of size 192 free'd
+==22115==    at 0x484BE40: realloc (vg_replace_malloc.c:1801)
+==22115==    by 0x405417: seatvt (neco.c:5)
+==22115==    by 0x405AEB: init_wayland (neco.c:228)
+==22115==    by 0x40679A: main (neco.c:412)
+==22115==  Block was alloc'd at
+==22115==    at 0x484BC13: calloc (vg_replace_malloc.c:1675)
+==22115==    by 0x4053F0: seatvi (neco.c:5)
+==22115==    by 0x405A87: init_wayland (neco.c:217)
+==22115==    by 0x40679A: main (neco.c:412)
+==22115== 
+==22115== 
+==22115== Process terminating with default action of signal 2 (SIGINT)
+==22115==    at 0x40594C: render (neco.c:138)
+==22115==    by 0x405E40: render_mons (neco.c:251)
+==22115==    by 0x4069C1: main (neco.c:426)
+==22115== 
+==22115== HEAP SUMMARY:
+==22115==     in use at exit: 1,366,843 bytes in 58 blocks
+==22115==   total heap usage: 5,943 allocs, 5,885 frees, 2,175,338 bytes allocated
+==22115== 
+==22115== LEAK SUMMARY:
+==22115==    definitely lost: 18,197 bytes in 1 blocks
+==22115==    indirectly lost: 0 bytes in 0 blocks
+==22115==      possibly lost: 0 bytes in 0 blocks
+==22115==    still reachable: 1,348,646 bytes in 57 blocks
+==22115==         suppressed: 0 bytes in 0 blocks
+==22115== Rerun with --leak-check=full to see details of leaked memory
+==22115== 
+==22115== For lists of detected and suppressed errors, rerun with: -s
+==22115== ERROR SUMMARY: 4 errors from 4 contexts (suppressed: 0 from 0)
