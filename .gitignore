@@ -3,4 +3,4 @@
 protocol/*.c
 protocol/*.h
 bin
-
+*.log
