@@ -103,12 +103,13 @@ void zwlr_configure(void *data, struct zwlr_layer_surface_v1 *l, uint32_t serial
 void zwlr_closed(void *data, struct zwlr_layer_surface_v1 *l) { }
 struct zwlr_layer_surface_v1_listener zwlr_listener = { .configure = zwlr_configure, .closed = zwlr_closed };
 
+struct pal { uint32_t ncol; uint32_t tran; uint32_t *__restrict cols; };
+
 struct gif {
   uint32_t w, h, framec;
   uint8_t *__restrict data; /// frames * w * h
   uint32_t *__restrict times; /// frames
-  uint32_t ncol;
-  uint32_t *__restrict cols;
+  struct pal *__restrict pals;
   uint8_t curf;
 };
 struct gif gif;
@@ -134,7 +135,7 @@ void render(struct cmon *mon) { /// TODO:
   for (i = 0; i < mon->sb.height; ++i) {
     for (j = 0; j < mon->sb.width; ++j) {
       //mon->sb.data[co + (i + 0) * mon->sb.width + j + 0] = gif.cols[GIFC(gif, gif.curf, i, j)];
-      mon->sb.data[co + (i + 0) * mon->sb.width + j + 0] = gif.cols[GIFC(gif, gif.curf, i, j)];
+      mon->sb.data[co + (i + 0) * mon->sb.width + j + 0] = gif.pals[gif.curf].cols[GIFC(gif, gif.curf, i, j)];
     }
   }
 
@@ -249,38 +250,65 @@ void init_wayland() {
 
 void render_mons() { int32_t i; for(i = 0; i < state.monsl; ++i) { render(&CMON); } }
 
+#define GCOL(_col) (0xFF000000 | ((_col).R << 16) | ((_col).G << 8) | (_col).B)
+uint32_t diff_pallete(struct pal *__restrict p, struct GIF_WHDR* whdr) {
+  if (p->ncol != whdr->clrs) { return 1; }
+  if (p->tran != whdr->tran) { return 1; }
+  int32_t i;
+  for(i = 0; i < p->ncol; ++i) { 
+    if (p->cols[i] != ((i==whdr->tran)?0:GCOL(whdr->cpal[i]))) { 
+      fprintf(stdout, "Found diff at %u: %u != %u (%u)\n", i, p->cols[i], GCOL(whdr->cpal[i]), i == whdr->tran);
+      return 1; 
+    } 
+  }
+  return 0;
+}
+
+void rebuild_palette(struct gif *__restrict g, struct GIF_WHDR* whdr) {
+  if (whdr->ifrm && !diff_pallete(g->pals+(whdr->ifrm - 1), whdr)) {
+    g->pals[whdr->ifrm] = g->pals[whdr->ifrm - 1];
+  } else {
+    //fprintf(stdout, "New palette %lu\n", whdr->ifrm);
+    g->pals[whdr->ifrm].ncol = whdr->clrs;
+    g->pals[whdr->ifrm].cols = calloc(whdr->clrs, sizeof(*g->pals->cols));
+    int32_t i;
+    for(i = 0; i < g->pals[whdr->ifrm].ncol; ++i) { g->pals[whdr->ifrm].cols[i] = ((i==whdr->tran)?0:GCOL(whdr->cpal[i])); }
+    g->pals[whdr->ifrm].tran = whdr->tran;
+  }
+}
+
 void getframe(void* data, struct GIF_WHDR* whdr) {
   struct gif *__restrict g = data;
   if (!whdr->ifrm) { 
+    //fprintf(stdout, "Intr mode: %lu %lu\n", whdr->intr, whdr->mode);
     g->w = whdr->xdim * scale;
     g->h = whdr->ydim * scale;
     g->framec = whdr->nfrm;
     g->data = malloc(ceil(g->w * g->h * g->framec));
     g->times = malloc(g->framec * sizeof(*g->times));
-    g->ncol = whdr->clrs;
-    g->cols = malloc(g->ncol * sizeof(*g->cols));
-    int32_t i;
-    for(i = 0; i < g->ncol; ++i) {
-      if (i == whdr->tran) {
-        g->cols[i] = 0;
-      } else {
-        g->cols[i] = 0xFF000000 | (whdr->cpal[i].R << 16) | (whdr->cpal[i].G << 8) | whdr->cpal[i].B;
-      }
-    }
+    g->pals = malloc(g->framec * sizeof(*g->pals));
   }
 
+  rebuild_palette(g, whdr);
   g->times[whdr->ifrm] = whdr->time;
 
   /// TODO: Add gif sub scaling
-  { 
-    int32_t i, j;
-    for (i = 0; i < g->h; ++i) {
-      for (j = 0; j < g->w; ++j) {
-        if ((i < whdr->fryo * scale) || (i >= (whdr->fryo + whdr->fryd) * scale) ||
-            (j < whdr->frxo * scale) || (j >= (whdr->frxo + whdr->frxd) * scale)) {
-          GIFC(*g, whdr->ifrm, i, j) = whdr->tran;
+  int32_t i, j;
+  for (i = 0; i < g->h; ++i) {
+    for (j = 0; j < g->w; ++j) {
+      if ((i < whdr->fryo * scale) || (i >= (whdr->fryo + whdr->fryd) * scale) ||
+          (j < whdr->frxo * scale) || (j >= (whdr->frxo + whdr->frxd) * scale)) {
+        if (whdr->mode == GIF_CURR && whdr->ifrm) {
+          GIFC(*g, whdr->ifrm, i, j) = GIFC(*g, whdr->ifrm - 1, i, j);
         } else {
-          GIFC(*g, whdr->ifrm, i, j) = whdr->bptr[((int)(i/scale) - whdr->fryo) * whdr->frxd + (int)(j/scale) - whdr->frxo];
+          GIFC(*g, whdr->ifrm, i, j) = (whdr->tran >= 0) ? whdr->tran : whdr->bkgd;
+        }
+      } else {
+        uint8_t ptr = whdr->bptr[((int)(i/scale) - whdr->fryo) * whdr->frxd + (int)(j/scale) - whdr->frxo];
+        if (ptr == whdr->tran && whdr->ifrm && whdr->mode == GIF_CURR) {
+          GIFC(*g, whdr->ifrm, i, j) = GIFC(*g, whdr->ifrm - 1, i, j);
+        } else {
+          GIFC(*g, whdr->ifrm, i, j) = ptr; 
         }
       }
     }
@@ -335,7 +363,7 @@ void usage() {
 int main(int argc, char **argv) {
   setbuf(stderr, NULL);
   setlocale(LC_ALL, "");
-  log_level = 0;
+  log_level = 2;
   errf = stderr;
   {
     int32_t i;
