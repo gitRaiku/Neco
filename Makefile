@@ -61,16 +61,14 @@ install: build
 	cp neco.gif /usr/share/wl-neco/neco.gif
 	cp $(BIN_DIR)/$(TARGET) /usr/local/bin/$(TARGET)
 
-ARGS="/home/raiku/neco-arc.gif"
-ARGS=-s 3 /home/raiku/neco-arc-mbtl.gif
 run: build
-	(cd $(BIN_DIR) && ./$(TARGET) $(ARGS))
+	$(BIN_DIR)/$(TARGET) neco.gif
 
 valgrind: build
-	$(VALGRIND) $(BIN_DIR)/$(TARGET) $(ARGS)
+	$(VALGRIND) $(BIN_DIR)/$(TARGET)
 
 debug: build
-	(cd $(BIN_DIR) && gdb -q --args ./$(TARGET) $(ARGS))
+	gdb -q --args $(BIN_DIR)/$(TARGET)
 
 clean:
 	sudo rm -f  $(C_OBJ)
