@@ -12,6 +12,9 @@
                                                // for gifs on startup
 #endif
 
+
+uint32_t log_level = 2;
+
 uint32_t screenw = 1920; // Screen width and height in px
 uint32_t screenh = 1080;
 

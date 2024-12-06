@@ -4,7 +4,6 @@
 
 VECTOR_SUITE(seat, struct cseat)
 
-uint32_t log_level;
 FILE *__restrict errf;
 float cposx, cposy;
 double scale = 1.0;
@@ -47,7 +46,6 @@ void p_axis_source(void *d, struct wl_pointer *p, uint32_t s) { }
 void p_axis_stop(void *d, struct wl_pointer *p, uint32_t t, uint32_t s) { }
 void p_axis_discrete(void *d, struct wl_pointer *p, uint32_t t, int s) { }
 void p_enter(void *data, struct wl_pointer *ptr, uint32_t serial, struct wl_surface *surface, wl_fixed_t x, wl_fixed_t y) {
-  fprintf(stdout, "ENTER\n");
   struct cseat *seat = data;
   seat->p.fmon = mon_from_surf(surface); seat->p.lpres = 0; seat->p.rpres = 0;
   if (!state.pImg) {
@@ -257,7 +255,7 @@ uint32_t diff_pallete(struct pal *__restrict p, struct GIF_WHDR* whdr) {
   int32_t i;
   for(i = 0; i < p->ncol; ++i) { 
     if (p->cols[i] != ((i==whdr->tran)?0:GCOL(whdr->cpal[i]))) { 
-      fprintf(stdout, "Found diff at %u: %u != %u (%u)\n", i, p->cols[i], GCOL(whdr->cpal[i]), i == whdr->tran);
+      LOG(0, "Found diff at %u: %u != %u (%u)\n", i, p->cols[i], GCOL(whdr->cpal[i]), i == whdr->tran);
       return 1; 
     } 
   }
@@ -268,7 +266,7 @@ void rebuild_palette(struct gif *__restrict g, struct GIF_WHDR* whdr) {
   if (whdr->ifrm && !diff_pallete(g->pals+(whdr->ifrm - 1), whdr)) {
     g->pals[whdr->ifrm] = g->pals[whdr->ifrm - 1];
   } else {
-    //fprintf(stdout, "New palette %lu\n", whdr->ifrm);
+    LOG(0, "New palette %lu\n", whdr->ifrm);
     g->pals[whdr->ifrm].ncol = whdr->clrs;
     g->pals[whdr->ifrm].cols = calloc(whdr->clrs, sizeof(*g->pals->cols));
     int32_t i;
@@ -280,7 +278,7 @@ void rebuild_palette(struct gif *__restrict g, struct GIF_WHDR* whdr) {
 void getframe(void* data, struct GIF_WHDR* whdr) {
   struct gif *__restrict g = data;
   if (!whdr->ifrm) { 
-    //fprintf(stdout, "Intr mode: %lu %lu\n", whdr->intr, whdr->mode);
+    LOG(0, "Intr mode: %lu %lu\n", whdr->intr, whdr->mode);
     g->w = whdr->xdim * scale;
     g->h = whdr->ydim * scale;
     g->framec = whdr->nfrm;
@@ -363,8 +361,6 @@ void usage() {
 int main(int argc, char **argv) {
   setbuf(stderr, NULL);
   setlocale(LC_ALL, "");
-  log_level = 2;
-  errf = stderr;
   {
     int32_t i;
     for(i = 1; i < argc; ++i) {

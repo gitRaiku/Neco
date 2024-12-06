@@ -47,7 +47,7 @@
 #define SLEN(x) (sizeof(x)/sizeof(x[0]))
 #define FUNNIERCSTRING(x) #x
 #define FUNNYCSTRING(x) FUNNIERCSTRING(x)
-#define LOG(imp,...) {if (log_level <= imp) {fprintf(errf, "Neco: " __VA_ARGS__);}}
+#define LOG(imp,...) {if (log_level <= imp) {fprintf(imp <= 5 ? stdout : stderr, "Neco: " __VA_ARGS__);}}
 #define WLCHECK(x,e) {if(!(x)){LOG(10, NAME ": Error running " #x " on " __FILE__ ":" FUNNYCSTRING(__LINE__) ": " e "\n"); exit(1);}}
 #define WLCHECKE(x,e) {if(!(x)){LOG(10, NAME "Error running " #x " on " __FILE__ ":" FUNNYCSTRING(__LINE__) ": " e " [%m]\n"); exit(1);}}
 
