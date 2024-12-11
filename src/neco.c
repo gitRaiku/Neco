@@ -17,6 +17,7 @@ uint32_t fw(int32_t x, int32_t l) {
   }
 }
 
+uint8_t crunning = 1;
 struct cstate {
   struct wl_display *dpy;
   struct wl_registry *reg;
@@ -105,7 +106,7 @@ struct pal { uint32_t ncol; uint32_t tran; uint32_t *__restrict cols; };
 
 struct gif {
   uint32_t w, h, framec;
-  uint8_t *__restrict data; /// frames * w * h
+  uint32_t *__restrict data; /// frames * w * h
   uint32_t *__restrict times; /// frames
   struct pal *__restrict pals;
   uint8_t curf;
@@ -133,7 +134,7 @@ void render(struct cmon *mon) { /// TODO:
   for (i = 0; i < mon->sb.height; ++i) {
     for (j = 0; j < mon->sb.width; ++j) {
       //mon->sb.data[co + (i + 0) * mon->sb.width + j + 0] = gif.cols[GIFC(gif, gif.curf, i, j)];
-      mon->sb.data[co + (i + 0) * mon->sb.width + j + 0] = gif.pals[gif.curf].cols[GIFC(gif, gif.curf, i, j)];
+      mon->sb.data[co + (i + 0) * mon->sb.width + j + 0] = GIFC(gif, gif.curf, i, j);
     }
   }
 
@@ -266,12 +267,15 @@ void rebuild_palette(struct gif *__restrict g, struct GIF_WHDR* whdr) {
   if (whdr->ifrm && !diff_pallete(g->pals+(whdr->ifrm - 1), whdr)) {
     g->pals[whdr->ifrm] = g->pals[whdr->ifrm - 1];
   } else {
+    if (whdr->ifrm) { free(g->pals[whdr->ifrm - 1].cols); }
     LOG(0, "New palette %lu\n", whdr->ifrm);
+    LOG(0, "Bkgd %lu; Tran %lu\n", whdr->bkgd, whdr->tran);
     g->pals[whdr->ifrm].ncol = whdr->clrs;
     g->pals[whdr->ifrm].cols = calloc(whdr->clrs, sizeof(*g->pals->cols));
     int32_t i;
     for(i = 0; i < g->pals[whdr->ifrm].ncol; ++i) { g->pals[whdr->ifrm].cols[i] = ((i==whdr->tran)?0:GCOL(whdr->cpal[i])); }
     g->pals[whdr->ifrm].tran = whdr->tran;
+    LOG(0, "41: %u; 23: %u; 30: %u\n", g->pals[whdr->ifrm].cols[41], g->pals[whdr->ifrm].cols[23], g->pals[whdr->ifrm].cols[30]);
   }
 }
 
@@ -282,7 +286,7 @@ void getframe(void* data, struct GIF_WHDR* whdr) {
     g->w = whdr->xdim * scale;
     g->h = whdr->ydim * scale;
     g->framec = whdr->nfrm;
-    g->data = malloc(ceil(g->w * g->h * g->framec));
+    g->data = calloc(ceil(g->w * g->h * g->framec), sizeof(g->data[0]));
     g->times = malloc(g->framec * sizeof(*g->times));
     g->pals = malloc(g->framec * sizeof(*g->pals));
   }
@@ -292,24 +296,26 @@ void getframe(void* data, struct GIF_WHDR* whdr) {
 
   /// TODO: Add gif sub scaling
   int32_t i, j;
-  for (i = 0; i < g->h; ++i) {
-    for (j = 0; j < g->w; ++j) {
-      if ((i < whdr->fryo * scale) || (i >= (whdr->fryo + whdr->fryd) * scale) ||
-          (j < whdr->frxo * scale) || (j >= (whdr->frxo + whdr->frxd) * scale)) {
-        if (whdr->mode == GIF_CURR && whdr->ifrm) {
-          GIFC(*g, whdr->ifrm, i, j) = GIFC(*g, whdr->ifrm - 1, i, j);
-        } else {
-          GIFC(*g, whdr->ifrm, i, j) = (whdr->tran >= 0) ? whdr->tran : whdr->bkgd;
-        }
-      } else {
-        uint8_t ptr = whdr->bptr[((int)(i/scale) - whdr->fryo) * whdr->frxd + (int)(j/scale) - whdr->frxo];
-        if (ptr == whdr->tran && whdr->ifrm && whdr->mode == GIF_CURR) {
-          GIFC(*g, whdr->ifrm, i, j) = GIFC(*g, whdr->ifrm - 1, i, j);
-        } else {
-          GIFC(*g, whdr->ifrm, i, j) = ptr; 
+  uint32_t soff = whdr->fryo * g->w * scale + whdr->frxo * scale;
+  for (i = 0; i < whdr->fryd * scale; ++i) {
+    for (j = 0; j < whdr->frxd * scale; ++j) {
+        uint8_t ptr = whdr->bptr[(int)(i/scale) * whdr->frxd + (int)(j/scale)];
+        if (ptr != whdr->tran) { GIFC(*g, whdr->ifrm, i, j + soff) = g->pals[whdr->ifrm].cols[ptr]; }
+    }
+  }
+
+  if (whdr->ifrm < g->framec - 1) {
+    memcpy(&GIFC(*g, whdr->ifrm + 1, 0, 0), &GIFC(*g, whdr->ifrm, 0, 0), g->w * g->h * sizeof(g->data[0]));
+    if (whdr->mode == GIF_BKGD) {
+      for (i = 0; i < whdr->fryd * scale; ++i) {
+        for (j = 0; j < whdr->frxd * scale; ++j) {
+            GIFC(*g, whdr->ifrm + 1, i, j + soff) = 0;
         }
       }
     }
+  } else {
+    free(g->pals[whdr->ifrm].cols);
+    free(g->pals);
   }
 }
 
@@ -357,6 +363,8 @@ void usage() {
   fprintf(stderr, "Usage: neco [-s/--scale <1.0>] [path/to/gif]\n");
   exit(1);
 }
+
+static void interrupt_handler(sig_atomic_t sig) { crunning = 0; }
 
 int main(int argc, char **argv) {
   setbuf(stderr, NULL);
@@ -407,7 +415,8 @@ int main(int argc, char **argv) {
   yr /= rr;
   init_wayland();
 
-  while (1) {
+  signal(SIGINT, interrupt_handler);
+  while (crunning) {
     ctu = getcurtu() - stu;
     int32_t i; 
 
@@ -422,6 +431,9 @@ int main(int argc, char **argv) {
     render_mons();
     ltu = ctu;
   }
+
+  free(gif.data);
+  free(gif.times);
 
   return 0;
 }
