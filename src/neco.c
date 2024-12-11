@@ -6,7 +6,7 @@ VECTOR_SUITE(seat, struct cseat)
 
 FILE *__restrict errf;
 float cposx, cposy;
-double scale = 1.0;
+double scale = 0.5;
 uint32_t dw, dh;
 int32_t amod(int32_t x, int32_t m) { return ((x % m) + m) % m; }
 uint32_t fw(int32_t x, int32_t l) {

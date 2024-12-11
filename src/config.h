@@ -11,7 +11,7 @@ float startyspeed = -999.0f; // Starting y speed (leave -999 for random)
 
 float speedMultiplier = 7.0;
 
-#define EMBED_GIF 1 // 0 = always read the gif from the specified path
+#define EMBED_GIF 0 // 0 = always read the gif from the specified path
                     // 1 = #embed the gif into the executable (C23)
 #if EMBED_GIF
 #define GIF_PATH "../neco.gif" // Change this path to set where neco searches
