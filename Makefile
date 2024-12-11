@@ -58,19 +58,20 @@ build: $(BIN_DIR) $(PROT_OBJ_NAMES) $(BIN_DIR)/$(TARGET)
 install: build
 	mkdir -p /usr/share/wl-neco
 	cp neco.gif /usr/share/wl-neco/neco.gif
-	cp $(BIN_DIR)/$(TARGET) /usr/local/bin/$(TARGET)
+	 cp $(BIN_DIR)/$(TARGET) /usr/local/bin/$(TARGET)
 
 uninstall:
 	rm -rf /usr/share/wl-neco
 	rm -f /usr/local/bin/$(TARGET)
 
 run: build
-	$(BIN_DIR)/$(TARGET) neco.gif
+	# $(BIN_DIR)/$(TARGET) neco.gif
+	$(BIN_DIR)/$(TARGET) -s 0.01 neco.gif
 	# $(BIN_DIR)/$(TARGET) -s 9.0 ~/Misc/Downloads/neco/neco-bed.gif
 	# $(BIN_DIR)/$(TARGET) ~/Misc/Downloads/neco/neco-bed.gif
 
 valgrind: build
-	$(VALGRIND) $(BIN_DIR)/$(TARGET)
+	$(VALGRIND) $(BIN_DIR)/$(TARGET) -s 0.01
 
 debug: build
 	gdb -q --args $(BIN_DIR)/$(TARGET)

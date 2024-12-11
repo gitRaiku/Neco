@@ -6,7 +6,7 @@ VECTOR_SUITE(seat, struct cseat)
 
 FILE *__restrict errf;
 float cposx, cposy;
-double scale = 0.5;
+double scale = 1.0;
 uint32_t dw, dh;
 int32_t amod(int32_t x, int32_t m) { return ((x % m) + m) % m; }
 uint32_t fw(int32_t x, int32_t l) {
@@ -133,8 +133,7 @@ void render(struct cmon *mon) { /// TODO:
   uint32_t co = mon->sb.size * mon->sb.csel / 4;
   for (i = 0; i < mon->sb.height; ++i) {
     for (j = 0; j < mon->sb.width; ++j) {
-      //mon->sb.data[co + (i + 0) * mon->sb.width + j + 0] = gif.cols[GIFC(gif, gif.curf, i, j)];
-      mon->sb.data[co + (i + 0) * mon->sb.width + j + 0] = GIFC(gif, gif.curf, i, j);
+      mon->sb.data[co + i * mon->sb.width + j] = GIFC(gif, gif.curf, i, j);
     }
   }
 
@@ -286,7 +285,7 @@ void getframe(void* data, struct GIF_WHDR* whdr) {
     g->w = whdr->xdim * scale;
     g->h = whdr->ydim * scale;
     g->framec = whdr->nfrm;
-    g->data = calloc(ceil(g->w * g->h * g->framec), sizeof(g->data[0]));
+    g->data = calloc(ceil(g->w * g->h * g->framec + 80), sizeof(g->data[0])); // Padding for floating point to interger conversion errors with subunitary scales
     g->times = malloc(g->framec * sizeof(*g->times));
     g->pals = malloc(g->framec * sizeof(*g->pals));
   }
@@ -294,9 +293,8 @@ void getframe(void* data, struct GIF_WHDR* whdr) {
   rebuild_palette(g, whdr);
   g->times[whdr->ifrm] = whdr->time;
 
-  /// TODO: Add gif sub scaling
   int32_t i, j;
-  uint32_t soff = whdr->fryo * g->w * scale + whdr->frxo * scale;
+  uint32_t soff = (uint32_t)(whdr->fryo * scale) * g->w + (uint32_t)(whdr->frxo * scale);
   for (i = 0; i < whdr->fryd * scale; ++i) {
     for (j = 0; j < whdr->frxd * scale; ++j) {
         uint8_t ptr = whdr->bptr[(int)(i/scale) * whdr->frxd + (int)(j/scale)];
@@ -309,7 +307,7 @@ void getframe(void* data, struct GIF_WHDR* whdr) {
     if (whdr->mode == GIF_BKGD) {
       for (i = 0; i < whdr->fryd * scale; ++i) {
         for (j = 0; j < whdr->frxd * scale; ++j) {
-            GIFC(*g, whdr->ifrm + 1, i, j + soff) = 0;
+          GIFC(*g, whdr->ifrm + 1, i, j + soff) = 0;
         }
       }
     }
@@ -378,7 +376,7 @@ int main(int argc, char **argv) {
           char *t;
           scale = strtod(argv[i + 1], &t); ++i;
           if (t == argv[i]) { LOG(10, "Error converting argument [%s] into double!\n", argv[i]); usage(); }
-          if (scale < 0.999) { LOG(10, "Currently only scales greater than one are supported\n"); usage(); }
+          if (scale < 0.001) { LOG(10, "Scale too small!\n"); usage(); }
         }
       } else { break; }
     }
