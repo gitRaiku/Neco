@@ -368,6 +368,7 @@ int main(int argc, char **argv) {
   setbuf(stderr, NULL);
   setlocale(LC_ALL, "");
   {
+    char *gifp = NULL;
     int32_t i;
     for(i = 1; i < argc; ++i) {
       if (argv[i][0] == '-') {
@@ -378,11 +379,13 @@ int main(int argc, char **argv) {
           if (t == argv[i]) { LOG(10, "Error converting argument [%s] into double!\n", argv[i]); usage(); }
           if (scale < 0.001) { LOG(10, "Scale too small!\n"); usage(); }
         }
-      } else { break; }
+      } else { 
+        gifp = argv[i];
+      }
     }
-    if (i < argc) {
+    if (gifp != NULL) {
       LOG(0, "Using custom gif path %s\n", argv[i]);
-      customgif(argv[i], &gif);
+      customgif(gifp, &gif);
     } else {
       LOG(0, "Using default gif path %s\n", GIF_PATH);
       defaultgif(&gif);
