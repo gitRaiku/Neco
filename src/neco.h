@@ -42,7 +42,6 @@
 #define SEATV 7
 #define WOUTV 1
 
-
 #define CMON state.mons[i]
 #define SLEN(x) (sizeof(x)/sizeof(x[0]))
 #define FUNNIERCSTRING(x) #x
