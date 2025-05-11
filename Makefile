@@ -74,7 +74,7 @@ valgrind: build
 	$(VALGRIND) $(BIN_DIR)/$(TARGET) -s 0.01
 
 debug: build
-	gdb -q --args $(BIN_DIR)/$(TARGET)
+	gdb -q --args $(BIN_DIR)/$(TARGET) neco.gif
 
 clean:
 	sudo rm -f  $(C_OBJ)
